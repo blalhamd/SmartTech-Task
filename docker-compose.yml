@@ -1,0 +1,6 @@
+services:
+  edunexus.api:
+    image: ${DOCKER_REGISTRY-}edunexusapi
+    build:
+      context: .
+      dockerfile: EduNexus.API/Dockerfile

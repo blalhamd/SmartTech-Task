@@ -1,0 +1,87 @@
+﻿using EduNexus.Core.IServices;
+using EduNexus.Core.Models.V1.ViewModels.Auth;
+using EduNexus.Domain.Entities.Identity;
+using Microsoft.Extensions.Options;
+using System.Security.Claims;
+using System.Text;
+using EduNexus.Core.Helpers;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text.Json;
+using EduNexus.Core.Constants;
+
+namespace EduNexus.Business.Services
+{
+    public class JwtProvider : IJwtProvider
+    {
+        private readonly JwtSetting _jwtSetting;
+
+        public JwtProvider(IOptionsSnapshot<JwtSetting> jwtSetting)
+        {
+            _jwtSetting = jwtSetting.Value;
+        }
+
+        public object JsonClaimValueTypes { get; private set; }
+
+        public JwtProviderResponse GenerateToken(ApplicationUser user, IEnumerable<string> roles, IEnumerable<string> permissions)
+        {
+            var descriptor = new SecurityTokenDescriptor()
+            {
+                Issuer = _jwtSetting.Issuer,
+                Audience = _jwtSetting.Audience,
+                Expires = DateTime.Now.AddMinutes(_jwtSetting.LifeTime),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSetting.Key)), SecurityAlgorithms.HmacSha256),
+                Subject = new ClaimsIdentity(new List<Claim>()
+                {
+                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                    new Claim(ClaimTypes.Name, user.UserName!),
+                    new Claim(ClaimTypes.Email, user.Email!),
+                    new Claim(nameof(roles), JsonSerializer.Serialize(roles),Microsoft.IdentityModel.JsonWebTokens.JsonClaimValueTypes.JsonArray),
+                    new Claim(nameof(permissions), JsonSerializer.Serialize(permissions),Microsoft.IdentityModel.JsonWebTokens.JsonClaimValueTypes.JsonArray),
+                })
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+
+            var createToken = tokenHandler.CreateToken(descriptor);
+            var token = tokenHandler.WriteToken(createToken);
+
+            return new JwtProviderResponse()
+            {
+                Token = token,
+                TokenExpiration = DateTime.UtcNow.AddMinutes(_jwtSetting.LifeTime),
+            };
+        }
+
+        // to validate token that send with requests that ask new token by refresh token
+        public string? ValidateToken(string Token)
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var SymmetricSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSetting.Key));
+
+            try
+            {
+                handler.ValidateToken(Token, new TokenValidationParameters
+                {
+                    IssuerSigningKey = SymmetricSecurityKey,
+                    ValidateIssuerSigningKey = true,
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ClockSkew = TimeSpan.Zero,
+                    NameClaimType = "nameid"
+                },
+                out SecurityToken validatedToken);
+
+                var jwtToken = (JwtSecurityToken)validatedToken;
+
+                var userId = jwtToken.Claims.First(claim => claim.Type == "nameid").Value;
+
+                return userId;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+}
