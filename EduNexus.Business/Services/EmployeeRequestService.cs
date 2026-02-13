@@ -1,6 +1,7 @@
 ﻿using EduNexus.Core.Constants;
 using EduNexus.Core.IServices;
 using EduNexus.Core.IUnit;
+using EduNexus.Core.Models.V1.Dtos.Employee;
 using EduNexus.Core.Models.V1.Dtos.EmployeeRequest;
 using EduNexus.Core.Models.V1.ViewModels.EmployeeRequest;
 using EduNexus.Domain.Entities.Business;
@@ -15,7 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using System.Transactions;
-using static EduNexus.Core.Constants.Permissions;
+using Employee = EduNexus.Domain.Entities.Business.Employee;
 using EmployeeRequest = EduNexus.Domain.Entities.Business.EmployeeRequest;
 using Error = EduNexus.Shared.Common.Error;
 
@@ -87,10 +88,7 @@ namespace EduNexus.Business.Services
             if (employeeRequest is null)
                 return Result.Failure(EmployeeRequestErrors.NotFound);
 
-            if (employeeRequest.CreatedBy == _currentUserService.UserId)
-                return Result.Failure(new Error("Security", "must approved by checker not maker", ErrorType.Validation));
-
-            var approveStatus = employeeRequest.Approve();
+            var approveStatus = employeeRequest.Approve(_currentUserService.UserId ?? Guid.Empty);
             if (!approveStatus.IsSuccess)
                 return approveStatus;
 
@@ -203,16 +201,9 @@ namespace EduNexus.Business.Services
                 return Result.Failure(EmployeeErrors.NotFound);
             }
 
-            if (employeeRequest.CreatedBy == _currentUserService.UserId)
-            {
-                _logger.LogCritical("Security Violation: User {UserId} attempted to approve their own delete request {RequestId}",
-                    _currentUserService.UserId, requestId);
-                return Result.Failure(EmployeeRequestErrors.MakerCannotBeReviewer);
-            }
-
             await _uOW.EmployeeRepositoryAsync.DeleteAsync(employee);
 
-            var result = employeeRequest.Approve();
+            var result = employeeRequest.Approve(_currentUserService.UserId ?? Guid.Empty);
             if (!result.IsSuccess)
             {
                 _logger.LogWarning("Domain validation failed during approval for request {RequestId}: {Error}",
@@ -308,13 +299,6 @@ namespace EduNexus.Business.Services
             if (employeeRequest is null)
                 return Result.Failure(EmployeeRequestErrors.NotFound);
 
-            if(_currentUserService.UserId == employeeRequest.CreatedBy)
-            {
-                _logger.LogCritical("Security Violation: User {UserId} attempted to approve their own delete request {RequestId}",
-                  _currentUserService.UserId, requestId);
-                return Result.Failure(EmployeeRequestErrors.MakerCannotBeReviewer);
-            }
-
             var result = employeeRequest.Reject(Reason, _currentUserService.UserId ?? Guid.Empty);
             if (!result.IsSuccess)
                 return result;
@@ -391,7 +375,7 @@ namespace EduNexus.Business.Services
             if(!result.IsSuccess)
                 return ValueResult<Guid>.Failure(result.Error);
 
-            var approved = employeeRequest.Approve();
+            var approved = employeeRequest.Approve(_currentUserService.UserId?? Guid.Empty);
             if(!approved.IsSuccess)
                 return ValueResult<Guid>.Failure(approved.Error);
 
@@ -400,6 +384,109 @@ namespace EduNexus.Business.Services
 
             _logger.LogInformation("update request approved successfully");
             return ValueResult<Guid>.Success(requestId);
+        }
+
+        public async Task<ValueResult<Guid>> DeactivateEmployeeRequest(Guid employeeId, CancellationToken cancel = default)
+        {
+            _logger.LogInformation("Attempint to deactivate employee {EmployeeId}", employeeId);
+           
+            // check employee is exist
+            var employee = await _uOW.EmployeeRepositoryAsync.GetEmployee(employeeId);
+            if (employee is null)
+            {
+                _logger.LogWarning("employee with {EmployeeId} not found", employeeId);
+                return ValueResult<Guid>.Failure(EmployeeRequestErrors.NotFound);
+            }
+
+            if (!employee.IsActive) 
+            {
+                _logger.LogWarning("Employee {EmployeeId} is already deactivated", employeeId);
+                return ValueResult<Guid>.Failure(EmployeeErrors.AlreadyDeactivated);
+            }
+
+            // check employee doesn't have pending requests
+            var hasPendingRequest = await _uOW.EmployeeRequestRepositoryAsync
+                                          .IsExistAsync(r => r.EmployeeId == employeeId &&
+                                                             r.Status == RequestStatus.Pending);
+            if (hasPendingRequest)
+            {
+                _logger.LogWarning("this employee can't deactivate because he has pending requests");
+                return ValueResult<Guid>.Failure(EmployeeRequestErrors.HasPendingRequest);
+            }
+
+            // serialize employee data with UserId too because will need it in approve
+            var serialize = JsonSerializer.Serialize(new
+            {
+                Salary = employee.Salary,
+                FullName = employee.FullName,
+                UserId = employee.UserId,
+                Position = employee.Position
+            },
+            _jsonOptions);
+
+            // create employee request
+            var employeeRequestResult = EmployeeRequest.CreateDeactivateRequest(employeeId, serialize);
+            if (!employeeRequestResult.IsSuccess)
+                return ValueResult<Guid>.Failure(employeeRequestResult.Error);
+
+            // add && save in DB
+            await _uOW.EmployeeRequestRepositoryAsync.CreateAsync(employeeRequestResult.Value);
+            await _uOW.SaveChangesAsync(cancel);
+
+            _logger.LogInformation("deactivate employee request created successfully");
+
+            return ValueResult<Guid>.Success(employeeRequestResult.Value.Id);
+        }
+
+        public async Task<Result> ApproveDeactivateEmployeeRequest(Guid requestId, CancellationToken cancellation = default)
+        {
+            _logger.LogInformation("Attempint to approve deactivate employee request {RequestId}", requestId);
+
+            // check employee request is exist
+            var employeeRequest = await _uOW.EmployeeRequestRepositoryAsync.GetByIdAsync(requestId);
+            if(employeeRequest is null)
+            {
+                _logger.LogWarning("employee request with {RequestId} not found", requestId);
+                return Result.Failure(EmployeeRequestErrors.NotFound);
+            }
+
+            // approve request
+            var approvalResult = employeeRequest.Approve(_currentUserService.UserId ?? Guid.Empty);
+            if (!approvalResult.IsSuccess)
+                return approvalResult;
+
+            // desrilize employee data from new data from request data
+            var desrialize = JsonSerializer.Deserialize<EmployeeDto>(employeeRequest.NewData, _jsonOptions);
+
+            // get employee 
+            var employee = await _uOW.EmployeeRepositoryAsync.FirstOrDefaultAsync(x => x.UserId == desrialize!.UserId);
+            if(employee is null)
+            {
+                _logger.LogWarning("employee not found");
+                return Result.Failure(EmployeeErrors.NotFound);
+            }
+
+            using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+            {
+                // make it as IsActive = false
+                employee.Lock();
+
+                // lock it by userId
+                var user = await _userManager.FindByIdAsync(employee.UserId.ToString());
+                if (user != null)
+                {
+                    await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
+                }
+
+                // save in DB
+                await _uOW.SaveChangesAsync(cancellation);
+
+                // complete
+                transaction.Complete();
+                // log success
+                _logger.LogInformation("Approved deactivate request {RequestId} by Checker {UserId}", requestId, _currentUserService.UserId);                // return
+                return Result.Success();
+            }
         }
     }
 }

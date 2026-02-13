@@ -44,6 +44,14 @@ namespace EduNexus.API.Controllers
         public async Task<IActionResult> RaiseDelete(Guid employeeId, CancellationToken ct)
             => HandleResult(await _requestService.DeleteEmployeeRequestAsync(employeeId, ct));
 
+        [HttpPost("deactivate/{employeeId:guid}")]
+        [MapToApiVersion("1.0")]
+        [HasPermission(Permissions.EmployeeRequest.Delete)] 
+        [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> RaiseDeactivate(Guid employeeId, CancellationToken ct)
+            => HandleResult(await _requestService.DeactivateEmployeeRequest(employeeId, ct));
+
         #endregion
 
         #region Checker Actions
@@ -74,6 +82,14 @@ namespace EduNexus.API.Controllers
         [HasPermission(Permissions.EmployeeRequest.Reject)]
         public async Task<IActionResult> Reject(Guid id, [FromQuery] string? reason, CancellationToken ct)
             => HandleResult(await _requestService.RejectEmployeeRequestAsync(id, reason, ct));
+
+        [HttpPatch("{id:guid}/approve-deactivate")]
+        [MapToApiVersion("1.0")]
+        [HasPermission(Permissions.EmployeeRequest.Approve)]
+        [ProducesResponseType(typeof(Result), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ApproveDeactivate(Guid id, CancellationToken ct)
+            => HandleResult(await _requestService.ApproveDeactivateEmployeeRequest(id, ct));
 
         #endregion
 

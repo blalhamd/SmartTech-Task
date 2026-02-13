@@ -48,6 +48,12 @@ namespace EduNexus.Domain.Entities.Business
             return Result.Success();
         }
 
+        public Result Lock()
+        {
+            IsActive = false;
+            return Result.Success();
+        }
+
         private static Error Validate(string fullName, decimal salary, string position, Guid userId)
         {
             if (string.IsNullOrWhiteSpace(fullName))

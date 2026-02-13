@@ -15,7 +15,7 @@ namespace EduNexus.Infrastructure.Repositories.Non_Generic
 
         public async Task<EmployeeDto?> GetEmployee(Guid id)
         {
-            var employeeDto = await base.Entity.Where(x => x.Id == id)
+            var employeeDto = await base.Entity.Where(x => x.Id == id && x.IsActive)
                                                .Select(x => new EmployeeDto
                                                {
                                                    Id = x.Id,

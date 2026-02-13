@@ -21,5 +21,9 @@ namespace EduNexus.Core.IServices
         Task<ValueResult<EmployeeRequestViewModel>> GetEmployeeRequestByIdAsync(Guid requestId, CancellationToken cancellation = default);
         // reject method
         Task<Result> RejectEmployeeRequestAsync(Guid requestId, string? Reason, CancellationToken cancellation = default);
+
+        // Deactivate employee
+        Task<ValueResult<Guid>> DeactivateEmployeeRequest(Guid employeeId, CancellationToken cancel = default);
+        Task<Result> ApproveDeactivateEmployeeRequest(Guid requestId, CancellationToken cancellation = default);
     }
 }

@@ -14,6 +14,7 @@ namespace EduNexus.Domain.Errors
         public static Error MakerCannotBeReviewer = new("EmployeeRequest.MakerCannotBeReviewer", "Maker can't be Reviewer.", ErrorType.Validation);
         public static Error AlreadyRequested = new ("already requested", "in progress", ErrorType.Conflict);
         public static Error HasPendingUpdateRequested = new ("has pending update request", "in progress", ErrorType.Conflict);
+        public static Error HasPendingRequest = new ("has pending request", "in progress", ErrorType.Conflict);
         public static Error NotFound = new("EmployeeRequest.NotFound", "Employee request not found.", ErrorType.NotFound);
     }
 }

@@ -39,11 +39,14 @@ namespace EduNexus.Business.Services
             pageNumber = Math.Max(pageNumber, 1);
             pageSize = Math.Clamp(pageSize, 1, 10);
 
-            var employees = await _uOW.EmployeeRepositoryAsync.GetAllAsync(expression: null, orderBy: null, pageNumber, pageSize);
+            var employees = await _uOW.EmployeeRepositoryAsync
+                                 .GetAllAsync(expression: x => x.IsActive,
+                                              orderBy: o => o.OrderByDescending(x => x.CreatedAt),
+                                              pageNumber, pageSize);
             if (!employees.Any())
                 return ValueResult<PagesResult<EmployeeViewModel>>.Success(new([], pageNumber, pageSize, 0));
 
-            var totalCount = await _uOW.EmployeeRepositoryAsync.GetCountAsync();
+            var totalCount = await _uOW.EmployeeRepositoryAsync.GetCountAsync(x => x.IsActive);
 
             var employeesVM = employees.Select(MapEmployeeToEmployeeViewModel).ToList();
 

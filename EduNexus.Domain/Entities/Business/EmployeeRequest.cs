@@ -93,10 +93,13 @@ namespace EduNexus.Domain.Entities.Business
         }
 
       
-        public Result Approve()
+        public Result Approve(Guid reviewerId)
         {
-            if (Status != RequestStatus.Pending)
+            if (Status != RequestStatus.Pending && Status == RequestStatus.Approved)
                 return Result.Failure(EmployeeRequestErrors.AlreadyApproved);
+
+            if (CreatedBy == reviewerId)
+                return Result.Failure(EmployeeRequestErrors.MakerCannotBeReviewer);
 
             Status = RequestStatus.Approved;
 
@@ -117,7 +120,25 @@ namespace EduNexus.Domain.Entities.Business
             return Result.Success();
         }
 
-      
+        public static ValueResult<EmployeeRequest> CreateDeactivateRequest(Guid employeeId, string newData)
+        {
+            if (employeeId == Guid.Empty)
+                return ValueResult<EmployeeRequest>.Failure(EmployeeRequestErrors.InvalidEmployeeId);
+
+            if (string.IsNullOrEmpty(newData))
+                return ValueResult<EmployeeRequest>.Failure(EmployeeRequestErrors.InValidNewData);
+
+            var request = new EmployeeRequest
+            {
+                ActionType = ActionType.Deactivate,
+                EmployeeId = employeeId,
+                Status = RequestStatus.Pending,
+                OldData = string.Empty,
+                NewData = newData
+            };
+
+            return ValueResult<EmployeeRequest>.Success(request);
+        }
 
     }
 }
