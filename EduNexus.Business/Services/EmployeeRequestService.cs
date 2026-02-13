@@ -4,7 +4,6 @@ using EduNexus.Core.IUnit;
 using EduNexus.Core.Models.V1.Dtos.Employee;
 using EduNexus.Core.Models.V1.Dtos.EmployeeRequest;
 using EduNexus.Core.Models.V1.ViewModels.EmployeeRequest;
-using EduNexus.Domain.Entities.Business;
 using EduNexus.Domain.Entities.Identity;
 using EduNexus.Domain.Enums;
 using EduNexus.Domain.Errors;

@@ -2,7 +2,6 @@
 using EduNexus.Core.IUnit;
 using EduNexus.Core.Models.V1.Dtos.Employee;
 using EduNexus.Core.Models.V1.ViewModels.Employee;
-using EduNexus.Domain.Entities.Business;
 using EduNexus.Domain.Errors;
 using EduNexus.Shared.Common;
 using Microsoft.Extensions.Logging;
@@ -40,32 +39,18 @@ namespace EduNexus.Business.Services
             pageSize = Math.Clamp(pageSize, 1, 10);
 
             var employees = await _uOW.EmployeeRepositoryAsync
-                                 .GetAllAsync(expression: x => x.IsActive,
-                                              orderBy: o => o.OrderByDescending(x => x.CreatedAt),
+                                 .GetEmployees(expression: x => x.IsActive,
                                               pageNumber, pageSize);
             if (!employees.Any())
                 return ValueResult<PagesResult<EmployeeViewModel>>.Success(new([], pageNumber, pageSize, 0));
 
             var totalCount = await _uOW.EmployeeRepositoryAsync.GetCountAsync(x => x.IsActive);
 
-            var employeesVM = employees.Select(MapEmployeeToEmployeeViewModel).ToList();
+            var employeesVM = employees.Select(MapDtoToEmployeeViewModel).ToList();
 
             return ValueResult<PagesResult<EmployeeViewModel>>.Success(new(employeesVM, pageNumber, pageSize, totalCount));
         }
 
-        private static EmployeeViewModel MapEmployeeToEmployeeViewModel(Employee employee)
-        {
-            return new EmployeeViewModel()
-            {
-                Id = employee.Id,
-                FullName = employee.FullName,
-                IsActive = employee.IsActive,
-                Position = employee.Position,
-                Salary = employee.Salary,
-                UserId = employee.UserId,
-                CreatedAt = employee.CreatedAt,
-            };
-        }
 
         private static EmployeeViewModel MapDtoToEmployeeViewModel(EmployeeDto dto)
         {

@@ -4,6 +4,7 @@ using EduNexus.Domain.Entities.Business;
 using EduNexus.Infrastructure.Data.Context;
 using EduNexus.Infrastructure.Repositories.Generic;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace EduNexus.Infrastructure.Repositories.Non_Generic
 {
@@ -29,6 +30,44 @@ namespace EduNexus.Infrastructure.Repositories.Non_Generic
                                                .FirstOrDefaultAsync();
 
             return employeeDto;
+        }
+
+     
+        public async Task<IList<EmployeeDto>> GetEmployees(Expression<Func<Employee, bool>>? expression, int? pageNumber = null, int? pageSize = null)
+        {
+            IQueryable<Employee> employees = base.Entity;
+
+            // 2. Apply Filter
+            
+            if (expression is not null)
+            {
+                employees = employees.Where(expression).OrderByDescending(x => x.CreatedAt);
+            }
+
+            // 4. Apply Pagination
+
+            if (pageNumber.HasValue && pageSize.HasValue)
+            {
+                var validPageNumber = pageNumber.Value > 0 ? pageNumber.Value : 1;
+                var validPageSize = pageSize.Value > 0 ? pageSize.Value : 10;
+
+                employees = employees.Skip((validPageNumber - 1) * validPageSize).Take(validPageSize);
+            }
+
+            // Map to dto
+
+            return await employees.Select(x => new EmployeeDto
+            {
+                Id = x.Id,
+                FullName = x.FullName,
+                Salary = x.Salary,
+                UserId = x.UserId,
+                CreatedAt = x.CreatedAt,
+                IsActive = x.IsActive,
+                Position = x.Position
+            })
+                .AsNoTracking()
+                .ToListAsync();
         }
     }
 }
