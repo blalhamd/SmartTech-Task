@@ -55,15 +55,21 @@ if (app.Environment.IsDevelopment())
    // app.MapOpenApi();
 }
 
+app.UseMiddleware<ErrorHandlingMiddleware>();
+
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
+
+app.UseCors(x =>
+    x.AllowAnyMethod()
+     .AllowAnyOrigin()
+     .AllowAnyHeader());
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-app.UseMiddleware<ErrorHandlingMiddleware>();
-
 app.Run();
+

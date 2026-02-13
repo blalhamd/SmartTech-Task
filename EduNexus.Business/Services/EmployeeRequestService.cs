@@ -15,6 +15,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using System.Transactions;
+using static EduNexus.Core.Constants.Permissions;
+using EmployeeRequest = EduNexus.Domain.Entities.Business.EmployeeRequest;
 using Error = EduNexus.Shared.Common.Error;
 
 namespace EduNexus.Business.Services
@@ -110,7 +112,7 @@ namespace EduNexus.Business.Services
                 if (!identityResult.Succeeded)
                 {
                     var error = identityResult.Errors.FirstOrDefault();
-                    return Result.Failure(new Shared.Common.Error(error!.Code, error.Description, ErrorType.Validation));
+                    return Result.Failure(new Error(error!.Code, error.Description, ErrorType.Validation));
                 }
 
                 var employeeResult = Employee.Create(data!.FullName, data.Salary, data.Position, user!.Id);
@@ -135,9 +137,31 @@ namespace EduNexus.Business.Services
 
         public async Task<Result> DeleteEmployeeRequestAsync(Guid employeeId, CancellationToken cancellation = default)
         {
+            _logger.LogInformation("Initiating delete request for EmployeeId: {EmployeeId}", employeeId);
+
             var employee = await _uOW.EmployeeRepositoryAsync.FirstOrDefaultAsync(x => x.Id == employeeId);
             if (employee is null)
                 return Result.Failure(EmployeeErrors.NotFound);
+
+            var hasPendingUpdateRequest = await _uOW.EmployeeRequestRepositoryAsync
+                                         .IsExistAsync(x => x.EmployeeId == employeeId &&
+                                         x.Status == RequestStatus.Pending &&
+                                         x.ActionType == ActionType.Update);
+            if (hasPendingUpdateRequest)
+            {
+                _logger.LogWarning("Conflict: Employee {Id} already has a pending update request.", employeeId);
+                return Result.Failure(EmployeeRequestErrors.HasPendingUpdateRequested);
+            }
+
+            var hasPendingDeleteRequest = await _uOW.EmployeeRequestRepositoryAsync
+                                         .IsExistAsync(x => x.EmployeeId == employeeId &&
+                                         x.Status == RequestStatus.Pending &&
+                                         x.ActionType == ActionType.Delete);
+            if (hasPendingDeleteRequest)
+            {
+                _logger.LogWarning("Conflict: Employee {Id} already has a pending delete request.", employeeId);
+                return Result.Failure(EmployeeRequestErrors.AlreadyRequested);
+            }
 
             var snapshot = JsonSerializer.Serialize(new
             {
@@ -153,26 +177,54 @@ namespace EduNexus.Business.Services
             await _uOW.EmployeeRequestRepositoryAsync.CreateAsync(request.Value);
             await _uOW.SaveChangesAsync(cancellation);
 
+
+            _logger.LogInformation("Delete request created successfully for Employee: {FullName}. RequestId: {RequestId}",
+                   employee.FullName, request.Value.Id);
+
             return Result.Success();
         }
 
         public async Task<Result> ApproveDeleteRequest(Guid requestId, CancellationToken cancellation = default)
         {
+            _logger.LogInformation("Attempting to approve delete request. RequestId: {RequestId}", requestId);
+
             var employeeRequest = await _uOW.EmployeeRequestRepositoryAsync.GetByIdAsync(requestId);
             if (employeeRequest is null)
+            {
+                _logger.LogWarning("Delete request approval failed: Request {RequestId} not found.", requestId);
                 return Result.Failure(EmployeeRequestErrors.NotFound);
+            }
 
             var employee = await _uOW.EmployeeRepositoryAsync.FirstOrDefaultAsync(x => x.Id == employeeRequest.EmployeeId);
             if (employee is null)
+            {
+                _logger.LogWarning("Delete request approval failed: Employee {EmployeeId} not found for request {RequestId}.",
+                        employeeRequest.EmployeeId, requestId);
                 return Result.Failure(EmployeeErrors.NotFound);
+            }
+
+            if (employeeRequest.CreatedBy == _currentUserService.UserId)
+            {
+                _logger.LogCritical("Security Violation: User {UserId} attempted to approve their own delete request {RequestId}",
+                    _currentUserService.UserId, requestId);
+                return Result.Failure(EmployeeRequestErrors.MakerCannotBeReviewer);
+            }
 
             await _uOW.EmployeeRepositoryAsync.DeleteAsync(employee);
 
             var result = employeeRequest.Approve();
             if (!result.IsSuccess)
+            {
+                _logger.LogWarning("Domain validation failed during approval for request {RequestId}: {Error}",
+                    requestId, result.Error.Description);
                 return result;
+            }
 
             await _uOW.SaveChangesAsync(cancellation);
+
+            _logger.LogInformation("Delete request approved successfully. RequestId: {RequestId}, Employee: {FullName}, Checker: {CheckerId}",
+            requestId, employee.FullName, _currentUserService.UserId);
+
             return Result.Success();
         }
 
@@ -184,7 +236,7 @@ namespace EduNexus.Business.Services
             var requests = await _uOW.EmployeeRequestRepositoryAsync
                                 .GetAllAsync(expression: x=> x.Status == RequestStatus.Pending, orderBy: o => o.OrderByDescending(x => x.CreatedAt), pageNumber, pageSize);
             if (!requests.Any())
-                return ValueResult<PagesResult<EmployeeRequestViewModel>>.Success(new PagesResult<EmployeeRequestViewModel>([], pageNumber, pageSize, 0));
+                return ValueResult<PagesResult<EmployeeRequestViewModel>>.Success(new([], pageNumber, pageSize, 0));
 
             var totalCount = await _uOW.EmployeeRequestRepositoryAsync.GetCountAsync(x => x.Status == RequestStatus.Pending);
 
@@ -256,6 +308,13 @@ namespace EduNexus.Business.Services
             if (employeeRequest is null)
                 return Result.Failure(EmployeeRequestErrors.NotFound);
 
+            if(_currentUserService.UserId == employeeRequest.CreatedBy)
+            {
+                _logger.LogCritical("Security Violation: User {UserId} attempted to approve their own delete request {RequestId}",
+                  _currentUserService.UserId, requestId);
+                return Result.Failure(EmployeeRequestErrors.MakerCannotBeReviewer);
+            }
+
             var result = employeeRequest.Reject(Reason, _currentUserService.UserId ?? Guid.Empty);
             if (!result.IsSuccess)
                 return result;
@@ -276,6 +335,16 @@ namespace EduNexus.Business.Services
             {
                 var error = validationResult.Errors.FirstOrDefault();
                 return ValueResult<Guid>.Failure(new Error(error!.ErrorCode, error.ErrorMessage, ErrorType.Validation));
+            }
+
+            var hasPendingUpdateRequest = await _uOW.EmployeeRequestRepositoryAsync
+                                               .IsExistAsync(x => x.EmployeeId == employeeId &&
+                                                                  x.ActionType == ActionType.Update &&
+                                                                  x.Status == RequestStatus.Pending);
+            if (!hasPendingUpdateRequest)
+            {
+                _logger.LogWarning("Conflict: Employee {Id} already has a pending request.", employeeId);
+                return ValueResult<Guid>.Failure(EmployeeRequestErrors.AlreadyRequested);
             }
 
             var employee = await _uOW.EmployeeRepositoryAsync.FirstOrDefaultAsync(x => x.Id == employeeId);

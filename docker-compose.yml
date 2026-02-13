@@ -1,6 +1,37 @@
+
 services:
-  edunexus.api:
-    image: ${DOCKER_REGISTRY-}edunexusapi
+  Sql-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: smarttech_sql
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=89223116Mo3ez!
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    networks:
+      - smarttech_network
+
+  api:
+    image: smarttech:1.0
+    container_name: smarttech_container
     build:
       context: .
-      dockerfile: EduNexus.API/Dockerfile
+      dockerfile: EduNexus/Dockerfile
+    ports:
+      - "4000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=Sql-db,1433;Database=SmartTechTask;User Id=sa;Encrypt=False;Password=89223116Mo3ez!;TrustServerCertificate=True
+    depends_on:
+      - Sql-db
+    networks:
+      - smarttech_network
+
+networks:
+  smarttech_network:
+    driver: bridge
+
+volumes:
+  mssql_data:
