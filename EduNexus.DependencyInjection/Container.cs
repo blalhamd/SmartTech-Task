@@ -1,7 +1,10 @@
 ﻿using EduNexus.Business.Services;
+using EduNexus.Business.Services.Notification;
+using EduNexus.Core.Constants;
 using EduNexus.Core.IRepositories.Generic;
 using EduNexus.Core.IRepositories.Non_Generic;
 using EduNexus.Core.IServices;
+using EduNexus.Core.IServices.Notification;
 using EduNexus.Core.IUnit;
 using EduNexus.Core.Models.V1.Validators;
 using EduNexus.Domain.Entities.Identity;
@@ -48,6 +51,9 @@ namespace EduNexus.DependencyInjection
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<IEmployeeRequestService, EmployeeRequestService>();
             services.AddScoped<IEmployeeService, EmployeeService>();
+            services.AddScoped<INotificationServiceFactory, NotificationServiceFactory>();
+            services.AddKeyedScoped<INotificationService, EmailNotificationService>(ServiceKey.Email_Key);
+            services.AddKeyedScoped<INotificationService, SmsNotificationService>(ServiceKey.SMS_Key);
 
             return services;
         }

@@ -1,5 +1,6 @@
 ﻿using EduNexus.Core.Constants;
 using EduNexus.Core.IServices;
+using EduNexus.Core.IServices.Notification;
 using EduNexus.Core.IUnit;
 using EduNexus.Core.Models.V1.Dtos.Employee;
 using EduNexus.Core.Models.V1.Dtos.EmployeeRequest;
@@ -24,6 +25,7 @@ namespace EduNexus.Business.Services
     public class EmployeeRequestService : IEmployeeRequestService
     {
         private readonly IUnitOfWorkAsync _uOW;
+        private readonly INotificationServiceFactory _notificationFactory;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<EmployeeRequestService> _logger;
@@ -34,7 +36,9 @@ namespace EduNexus.Business.Services
             WriteIndented = false, 
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
-        public EmployeeRequestService(IUnitOfWorkAsync uOW,
+        public EmployeeRequestService(
+            IUnitOfWorkAsync uOW,
+            INotificationServiceFactory notificationFactory,
             UserManager<ApplicationUser> userManager,
             ICurrentUserService currentUserService,
             ILogger<EmployeeRequestService> logger,
@@ -42,6 +46,7 @@ namespace EduNexus.Business.Services
             IValidator<UpdateEmployeeRequestDto> updateValidator)
         {
             _uOW = uOW;
+            _notificationFactory = notificationFactory;
             _userManager = userManager;
             _currentUserService = currentUserService;
             _logger = logger;
@@ -119,11 +124,21 @@ namespace EduNexus.Business.Services
                 await _uOW.EmployeeRepositoryAsync.CreateAsync(employeeResult.Value);
                 await _userManager.AddToRoleAsync(user, ApplicationRoles.Employee);
 
-                // send email to employee to welcome and to set password belong him.
-
                 await _uOW.SaveChangesAsync(cancellation);
 
                 transaction.Complete();
+
+                // send email to employee to welcome and to set password belong him.
+                if (!string.IsNullOrEmpty(data?.Email))
+                {
+                    var emailService = _notificationFactory.Create(NotificationType.Email);
+                    await emailService.SendMessage($"Hi {employeeResult.Value.FullName}, can set your password...");
+                }
+                else if (!string.IsNullOrEmpty(user?.PhoneNumber) && string.IsNullOrEmpty(data?.Email))
+                {
+                    var smsService = _notificationFactory.Create(NotificationType.SMS);
+                    await smsService.SendMessage($"Hi {employeeResult.Value.FullName}, can set your password...");
+                }
 
                 _logger.LogInformation("Employee Created Successfully. EmpId: {EmpId}, ApprovedBy: {CheckerId}",
                                 employeeResult.Value.Id, _currentUserService.UserId);
