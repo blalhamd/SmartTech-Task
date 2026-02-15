@@ -24,12 +24,11 @@ namespace EduNexus.Infrastructure.Data.EntitiesConfiguration
             builder.Property(e => e.Position)
                 .IsRequired()
                 .HasMaxLength(100);
-            
-            builder.HasIndex(e => e.FullName)
-                .IsUnique()
-                .HasFilter("[IsDeleted] = 0"); 
 
-            builder.HasIndex(e => e.UserId).IsUnique();
+            builder.HasIndex(e => e.FullName);
+               
+
+            builder.HasIndex(e => e.UserId).IsUnique().HasFilter("[IsDeleted]= 0");
 
             builder.HasOne(e => e.User)
                 .WithOne()

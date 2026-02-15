@@ -34,6 +34,14 @@ namespace EduNexus.Infrastructure.Data.Context
             modelBuilder.Entity<ApplicationRole>()
                 .ToTable(name: "Roles", schema: identitySchema);
 
+            modelBuilder.Entity<ApplicationUser>()
+                .ToTable(name: "Users", schema: identitySchema);
+
+            modelBuilder.Entity<ApplicationUser>()
+                .Property(e => e.FullName)
+                .IsRequired()
+                .HasMaxLength(100);
+
             // This is the join table between Users and Roles
             modelBuilder.Entity<IdentityUserRole<Guid>>()
                 .ToTable(name: "UserRoles", schema: identitySchema);
