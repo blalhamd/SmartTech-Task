@@ -3,7 +3,7 @@ using EduNexus.Core.Models.V1.Dtos.Auth;
 using EduNexus.Core.Models.V1.ViewModels.Auth;
 using Microsoft.AspNetCore.Mvc;
 
-namespace EduNexus.API.Controllers
+namespace EduNexus.API.Controllers.V1
 {
     [Route("api/v{version:apiVersion}/auth")]
     [ApiVersion("1.0")]

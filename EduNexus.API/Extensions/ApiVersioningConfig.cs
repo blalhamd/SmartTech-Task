@@ -18,20 +18,20 @@ namespace EduNexus.API.Extensions
                 options.ApiVersionReader = new UrlSegmentApiVersionReader();
 
                 // 2️⃣ Query String versioning: /api/products?api-version=1.0
-                options.ApiVersionReader = new QueryStringApiVersionReader();
+                //options.ApiVersionReader = new QueryStringApiVersionReader();
 
                 // 3️⃣ Header versioning: pass version in a custom header
                 // Example: api-version: 1.0
-                options.ApiVersionReader = new HeaderApiVersionReader("api-version");
+                //options.ApiVersionReader = new HeaderApiVersionReader("api-version");
 
                 // 4️⃣ Media Type (content negotiation) versioning:
                 // Example: Accept: application/json; version=1.0
-                options.ApiVersionReader = new MediaTypeApiVersionReader("version");
+                //options.ApiVersionReader = new MediaTypeApiVersionReader("version");
 
             }).AddApiExplorer(options =>
             {
-                options.GroupNameFormat = "'v'V";
-                options.SubstituteApiVersionInUrl = true;
+                options.GroupNameFormat = "'v'VVV";
+                options.SubstituteApiVersionInUrl = false;
             });
 
             return services;

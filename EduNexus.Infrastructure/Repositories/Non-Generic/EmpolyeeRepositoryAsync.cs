@@ -1,5 +1,6 @@
 ﻿using EduNexus.Core.IRepositories.Non_Generic;
 using EduNexus.Core.Models.V1.Dtos.Employee;
+using EduNexus.Core.Models.V2.Dto;
 using EduNexus.Domain.Entities.Business;
 using EduNexus.Infrastructure.Data.Context;
 using EduNexus.Infrastructure.Repositories.Generic;
@@ -64,6 +65,40 @@ namespace EduNexus.Infrastructure.Repositories.Non_Generic
                 UserId = x.UserId,
                 CreatedAt = x.CreatedAt,
                 IsActive = x.IsActive,
+                Position = x.Position
+            })
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<IList<EmployeeDtoV2>> GetEmployeesV2(Expression<Func<Employee, bool>>? expression, int? pageNumber = null, int? pageSize = null)
+        {
+            IQueryable<Employee> employees = base.Entity;
+
+            // 2. Apply Filter
+
+            if (expression is not null)
+            {
+                employees = employees.Where(expression).OrderByDescending(x => x.CreatedAt);
+            }
+
+            // 4. Apply Pagination
+
+            if (pageNumber.HasValue && pageSize.HasValue)
+            {
+                var validPageNumber = pageNumber.Value > 0 ? pageNumber.Value : 1;
+                var validPageSize = pageSize.Value > 0 ? pageSize.Value : 10;
+
+                employees = employees.Skip((validPageNumber - 1) * validPageSize).Take(validPageSize);
+            }
+
+            // Map to dto
+
+            return await employees.Select(x => new EmployeeDtoV2
+            {
+                Id = x.Id,
+                FullName = x.FullName,
+                Salary = x.Salary,
                 Position = x.Position
             })
                 .AsNoTracking()

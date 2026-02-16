@@ -7,7 +7,7 @@ using EduNexus.Core.Models.V1.ViewModels.EmployeeRequest;
 using EduNexus.Shared.Common;
 using Microsoft.AspNetCore.Mvc;
 
-namespace EduNexus.API.Controllers
+namespace EduNexus.API.Controllers.V1
 {
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/employee-requests")]

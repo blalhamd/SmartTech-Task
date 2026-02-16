@@ -2,6 +2,8 @@
 using EduNexus.Core.IUnit;
 using EduNexus.Core.Models.V1.Dtos.Employee;
 using EduNexus.Core.Models.V1.ViewModels.Employee;
+using EduNexus.Core.Models.V2.Dto;
+using EduNexus.Core.Models.V2.ViewModels;
 using EduNexus.Domain.Errors;
 using EduNexus.Shared.Common;
 using Microsoft.Extensions.Logging;
@@ -51,6 +53,23 @@ namespace EduNexus.Business.Services
             return ValueResult<PagesResult<EmployeeViewModel>>.Success(new(employeesVM, pageNumber, pageSize, totalCount));
         }
 
+        public async Task<ValueResult<PagesResult<EmployeeViewModelV2>>> GetEmployeesV2(int pageNumber, int pageSize)
+        {
+            pageNumber = Math.Max(pageNumber, 1);
+            pageSize = Math.Clamp(pageSize, 1, 10);
+
+            var employees = await _uOW.EmployeeRepositoryAsync
+                                 .GetEmployeesV2(expression: x => x.IsActive,
+                                              pageNumber, pageSize);
+            if (!employees.Any())
+                return ValueResult<PagesResult<EmployeeViewModelV2>>.Success(new([], pageNumber, pageSize, 0));
+
+            var totalCount = await _uOW.EmployeeRepositoryAsync.GetCountAsync(x => x.IsActive);
+
+            var employeesVM = employees.Select(MapDtoToEmployeeViewModelV2).ToList();
+
+            return ValueResult<PagesResult<EmployeeViewModelV2>>.Success(new(employeesVM, pageNumber, pageSize, totalCount));
+        }
 
         private static EmployeeViewModel MapDtoToEmployeeViewModel(EmployeeDto dto)
         {
@@ -65,5 +84,17 @@ namespace EduNexus.Business.Services
                 CreatedAt = dto.CreatedAt,
             };
         }
+
+        private static EmployeeViewModelV2 MapDtoToEmployeeViewModelV2(EmployeeDtoV2 dto)
+        {
+            return new EmployeeViewModelV2()
+            {
+                Id = dto.Id,
+                FullName = dto.FullName,
+                Position = dto.Position,
+                Salary = dto.Salary,
+            };
+        }
+
     }
 }

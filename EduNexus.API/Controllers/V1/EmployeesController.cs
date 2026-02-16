@@ -6,10 +6,10 @@ using EduNexus.Core.Models.V1.ViewModels.Employee;
 using EduNexus.Shared.Common;
 using Microsoft.AspNetCore.Mvc;
 
-namespace EduNexus.API.Controllers
+namespace EduNexus.API.Controllers.V1
 {
     [ApiVersion("1.0")]
-    [Route("api/v{version:apiVersion}/employees")]
+    [Route("api/v1/employees")]
     public class EmployeesController : BasApiController
     {
         private readonly IEmployeeService _employeeService;
@@ -22,7 +22,7 @@ namespace EduNexus.API.Controllers
         [HasPermission(Permissions.Employee.View)]
         [ProducesResponseType(typeof(PagesResult<EmployeeViewModel>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> Get([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
             => HandleResult(await _employeeService.GetEmployees(pageNumber, pageSize));
 
         [HttpGet("{id:guid}")]
@@ -32,5 +32,6 @@ namespace EduNexus.API.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(Guid id)
             => HandleResult(await _employeeService.GetById(id));
+
     }
 }
