@@ -23,6 +23,8 @@ namespace EduNexus.Business.Services
 
         public async Task<ValueResult<EmployeeViewModel>> GetById(Guid id)
         {
+            _logger.LogInformation("Attempting to access employee by ID {Id}", id);
+
             var employeeDto = await _uOW.EmployeeRepositoryAsync.GetEmployee(id);
             if(employeeDto is  null)
             {
@@ -37,6 +39,8 @@ namespace EduNexus.Business.Services
 
         public async Task<ValueResult<PagesResult<EmployeeViewModel>>> GetEmployees(int pageNumber, int pageSize)
         {
+            _logger.LogInformation("Attempting to access employees in PageNumber {PageNumber} with PageSize {PageSize}", pageNumber, pageSize);
+
             pageNumber = Math.Max(pageNumber, 1);
             pageSize = Math.Clamp(pageSize, 1, 10);
 

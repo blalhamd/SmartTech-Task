@@ -5,6 +5,7 @@ using EduNexus.Domain.Entities.Identity;
 using EduNexus.Infrastructure.SeedData;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Serilog;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +29,8 @@ builder.Services.RegisterJwtAuthenticationConfig(builder.Configuration);
 
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
 builder.Services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
+
+SerilogExtensions.AddSerilogConfiguration(builder.Host);
 
 // in case, ÚäÏí ÇßÔä ãËáÇ ãÍÊÇÌå ÏæÑ æÕáÇÍíå æÔÑØ, áÇÒã ÇÚãáåÇ ÈÔßá customize
 //builder.Services.AddAuthorization(options =>
