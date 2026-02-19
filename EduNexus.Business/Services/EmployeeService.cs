@@ -25,7 +25,7 @@ namespace EduNexus.Business.Services
         {
             _logger.LogInformation("Attempting to access employee by ID {Id}", id);
 
-            var employeeDto = await _uOW.EmployeeRepositoryAsync.GetEmployee(id);
+            var employeeDto = await _uOW.EmployeeRepositoryAsync.GetEmployeeV2(id);
             if(employeeDto is  null)
             {
                 _logger.LogWarning("Employee with ID {Id} not found", id);

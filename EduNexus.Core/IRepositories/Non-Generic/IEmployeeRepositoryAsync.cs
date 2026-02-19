@@ -9,6 +9,7 @@ namespace EduNexus.Core.IRepositories.Non_Generic
     public interface IEmployeeRepositoryAsync : IGenericRepositoryAsync<Employee>
     {
         Task<EmployeeDto?> GetEmployee(Guid id);
+        Task<EmployeeDto?> GetEmployeeV2(Guid id);
         Task<IList<EmployeeDto>> GetEmployees(Expression<Func<Employee, bool>>? expression,
             int? pageNumber = null,
             int? pageSize = null);

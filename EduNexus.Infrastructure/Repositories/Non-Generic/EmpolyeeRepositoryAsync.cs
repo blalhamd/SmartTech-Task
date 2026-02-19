@@ -11,8 +11,10 @@ namespace EduNexus.Infrastructure.Repositories.Non_Generic
 {
     public class EmpolyeeRepositoryAsync : GenericRepositoryAsync<Employee>, IEmployeeRepositoryAsync
     {
+        private readonly AppDbContext _appDbContext;
         public EmpolyeeRepositoryAsync(AppDbContext context) : base(context)
         {
+            _appDbContext = context;
         }
 
         public async Task<EmployeeDto?> GetEmployee(Guid id)
@@ -67,7 +69,7 @@ namespace EduNexus.Infrastructure.Repositories.Non_Generic
                 IsActive = x.IsActive,
                 Position = x.Position
             })
-                .AsNoTracking()
+                .AsNoTracking() // this is the default, because I will return dto not object iteself, so can remove it
                 .ToListAsync();
         }
 
@@ -104,5 +106,29 @@ namespace EduNexus.Infrastructure.Repositories.Non_Generic
                 .AsNoTracking()
                 .ToListAsync();
         }
+
+
+        public Task<EmployeeDto?> GetEmployeeV2(Guid id)
+        {
+            return _getEmployeeById(_appDbContext, id);
+        }
+
+       
+        private static readonly Func<AppDbContext, Guid, Task<EmployeeDto?>> _getEmployeeById =
+            EF.CompileAsyncQuery((AppDbContext context, Guid id) 
+                => context.Set<Employee>().Where(x => x.Id == id && x.IsActive)
+                     .Select(x => new EmployeeDto
+                     {
+                         Id = x.Id,
+                         FullName = x.FullName,
+                         IsActive = x.IsActive,
+                         Position = x.Position,
+                         Salary = x.Salary,
+                         UserId = x.UserId,
+                         CreatedAt = x.CreatedAt,
+                     })
+                     .FirstOrDefault());
+
+      
     }
 }
