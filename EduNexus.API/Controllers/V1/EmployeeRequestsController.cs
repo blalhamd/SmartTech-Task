@@ -98,7 +98,7 @@ namespace EduNexus.API.Controllers.V1
         [HttpGet]
         [MapToApiVersion("1.0")]
         [HasPermission(Permissions.EmployeeRequest.View)]
-        [ProducesResponseType(typeof(PagesResult<EmployeeRequestViewModel>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PagedResult<EmployeeRequestViewModel>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll(int pageNumber = 1, int pageSize = 10, CancellationToken ct = default)
             => HandleResult(await _requestService.GetAllEmployeeRequestsAsync(pageNumber, pageSize, ct));
 

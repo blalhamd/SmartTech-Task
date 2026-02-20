@@ -16,7 +16,7 @@ namespace EduNexus.Core.IServices
         Task<Result> DeleteEmployeeRequestAsync(Guid employeeId, CancellationToken cancellation = default);
         Task<Result> ApproveDeleteRequest(Guid requestId, CancellationToken cancellation = default);
         // request to get all employee requests
-        Task<ValueResult<PagesResult<EmployeeRequestViewModel>>> GetAllEmployeeRequestsAsync(int pageNumber, int pageSize, CancellationToken cancellation = default);
+        Task<ValueResult<PagedResult<EmployeeRequestViewModel>>> GetAllEmployeeRequestsAsync(int pageNumber, int pageSize, CancellationToken cancellation = default);
         // request to get a specific employee request by id with old data and new data
         Task<ValueResult<EmployeeRequestViewModel>> GetEmployeeRequestByIdAsync(Guid requestId, CancellationToken cancellation = default);
         // reject method

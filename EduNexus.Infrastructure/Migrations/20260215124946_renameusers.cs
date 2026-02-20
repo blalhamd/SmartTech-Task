@@ -5,7 +5,7 @@
 namespace EduNexus.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class renameusers : Migration
+    public partial class Renameusers : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

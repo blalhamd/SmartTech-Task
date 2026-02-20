@@ -31,10 +31,5 @@ namespace EduNexus.Shared.Exceptions
             : base($"The item '{itemName}' with value '{key}' already exists.")
         {
         }
-
-        protected ItemAlreadyExistsException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
     }
 }

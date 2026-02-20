@@ -1,8 +1,8 @@
 ﻿namespace EduNexus.Shared.Common
 {
-    public class PagesResult<T>
+    public class PagedResult<T>
     {
-        public PagesResult(IEnumerable<T> items, int pageIndex, int pageSize, long totalCount)
+        public PagedResult(IEnumerable<T> items, int pageIndex, int pageSize, long totalCount)
         {
             SetItems(items);
             SetPageIndex(pageIndex);
@@ -10,7 +10,7 @@
             SetTotalCount(totalCount);
         }
 
-        public IEnumerable<T> Items { get; private set; }
+        public IEnumerable<T> Items { get; private set; } = default!;
         public long TotalCount { get; private set; }
         public int PageNumber { get; private set; }
         public int PageSize { get; private set; }

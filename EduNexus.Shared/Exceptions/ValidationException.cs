@@ -40,11 +40,5 @@ namespace EduNexus.Shared.Exceptions
             Errors = errors;
         }
 
-        protected ValidationException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            // Errors dictionary serialization would go here if needed
-        }
-
     }
 }

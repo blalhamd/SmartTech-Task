@@ -23,13 +23,5 @@ namespace EduNexus.Shared.Exceptions
         {
         }
 
-        
-
-        protected BadRequestException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
-
-        public string V { get; }
     }
 }
