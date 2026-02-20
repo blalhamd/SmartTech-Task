@@ -13,7 +13,7 @@ namespace EduNexus.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     [Migration("20260215124946_renameusers")]
-    partial class renameusers
+    partial class Renameusers
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

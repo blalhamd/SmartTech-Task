@@ -34,10 +34,5 @@ namespace EduNexus.Shared.Exceptions
         protected BaseException(string message, Exception innerException) : base(message, innerException)
         {
         }
-
-        // This constructor is needed for serialization.
-        protected BaseException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
     }
 }

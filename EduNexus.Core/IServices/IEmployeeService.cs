@@ -6,8 +6,8 @@ namespace EduNexus.Core.IServices
 {
     public interface IEmployeeService
     {
-        Task<ValueResult<PagesResult<EmployeeViewModel>>> GetEmployees(int pageNumber, int pageSize);
-        Task<ValueResult<PagesResult<EmployeeViewModelV2>>> GetEmployeesV2(int pageNumber, int pageSize);
+        Task<ValueResult<PagedResult<EmployeeViewModel>>> GetEmployees(int pageNumber, int pageSize);
+        Task<ValueResult<PagedResult<EmployeeViewModelV2>>> GetEmployeesV2(int pageNumber, int pageSize);
         Task<ValueResult<EmployeeViewModel>> GetById(Guid id);
     }
 }

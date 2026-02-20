@@ -32,9 +32,5 @@ namespace EduNexus.Shared.Exceptions
         {
         }
 
-        protected ItemNotFoundException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
     }
 }

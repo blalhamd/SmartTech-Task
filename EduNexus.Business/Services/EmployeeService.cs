@@ -37,7 +37,7 @@ namespace EduNexus.Business.Services
             return ValueResult<EmployeeViewModel>.Success(employeeVM);
         }
 
-        public async Task<ValueResult<PagesResult<EmployeeViewModel>>> GetEmployees(int pageNumber, int pageSize)
+        public async Task<ValueResult<PagedResult<EmployeeViewModel>>> GetEmployees(int pageNumber, int pageSize)
         {
             _logger.LogInformation("Attempting to access employees in PageNumber {PageNumber} with PageSize {PageSize}", pageNumber, pageSize);
 
@@ -48,16 +48,16 @@ namespace EduNexus.Business.Services
                                  .GetEmployees(expression: x => x.IsActive,
                                               pageNumber, pageSize);
             if (!employees.Any())
-                return ValueResult<PagesResult<EmployeeViewModel>>.Success(new([], pageNumber, pageSize, 0));
+                return ValueResult<PagedResult<EmployeeViewModel>>.Success(new([], pageNumber, pageSize, 0));
 
             var totalCount = await _uOW.EmployeeRepositoryAsync.GetCountAsync(x => x.IsActive);
 
             var employeesVM = employees.Select(MapDtoToEmployeeViewModel).ToList();
 
-            return ValueResult<PagesResult<EmployeeViewModel>>.Success(new(employeesVM, pageNumber, pageSize, totalCount));
+            return ValueResult<PagedResult<EmployeeViewModel>>.Success(new(employeesVM, pageNumber, pageSize, totalCount));
         }
 
-        public async Task<ValueResult<PagesResult<EmployeeViewModelV2>>> GetEmployeesV2(int pageNumber, int pageSize)
+        public async Task<ValueResult<PagedResult<EmployeeViewModelV2>>> GetEmployeesV2(int pageNumber, int pageSize)
         {
             pageNumber = Math.Max(pageNumber, 1);
             pageSize = Math.Clamp(pageSize, 1, 10);
@@ -66,13 +66,13 @@ namespace EduNexus.Business.Services
                                  .GetEmployeesV2(expression: x => x.IsActive,
                                               pageNumber, pageSize);
             if (!employees.Any())
-                return ValueResult<PagesResult<EmployeeViewModelV2>>.Success(new([], pageNumber, pageSize, 0));
+                return ValueResult<PagedResult<EmployeeViewModelV2>>.Success(new([], pageNumber, pageSize, 0));
 
             var totalCount = await _uOW.EmployeeRepositoryAsync.GetCountAsync(x => x.IsActive);
 
             var employeesVM = employees.Select(MapDtoToEmployeeViewModelV2).ToList();
 
-            return ValueResult<PagesResult<EmployeeViewModelV2>>.Success(new(employeesVM, pageNumber, pageSize, totalCount));
+            return ValueResult<PagedResult<EmployeeViewModelV2>>.Success(new(employeesVM, pageNumber, pageSize, totalCount));
         }
 
         private static EmployeeViewModel MapDtoToEmployeeViewModel(EmployeeDto dto)

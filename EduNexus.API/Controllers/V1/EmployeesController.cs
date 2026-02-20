@@ -20,7 +20,7 @@ namespace EduNexus.API.Controllers.V1
         [HttpGet]
         [MapToApiVersion("1.0")]
         [HasPermission(Permissions.Employee.View)]
-        [ProducesResponseType(typeof(PagesResult<EmployeeViewModel>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PagedResult<EmployeeViewModel>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Get([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
             => HandleResult(await _employeeService.GetEmployees(pageNumber, pageSize));

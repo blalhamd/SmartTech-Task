@@ -233,7 +233,7 @@ namespace EduNexus.Business.Services
             return Result.Success();
         }
 
-        public async Task<ValueResult<PagesResult<EmployeeRequestViewModel>>> GetAllEmployeeRequestsAsync(int pageNumber, int pageSize, CancellationToken cancellation = default)
+        public async Task<ValueResult<PagedResult<EmployeeRequestViewModel>>> GetAllEmployeeRequestsAsync(int pageNumber, int pageSize, CancellationToken cancellation = default)
         {
             pageNumber = Math.Max(pageNumber, 1);
             pageSize = Math.Clamp(pageSize, 1, 10);
@@ -241,7 +241,7 @@ namespace EduNexus.Business.Services
             var requests = await _uOW.EmployeeRequestRepositoryAsync
                                 .GetAllAsync(expression: x=> x.Status == RequestStatus.Pending, orderBy: o => o.OrderByDescending(x => x.CreatedAt), pageNumber, pageSize);
             if (!requests.Any())
-                return ValueResult<PagesResult<EmployeeRequestViewModel>>.Success(new([], pageNumber, pageSize, 0));
+                return ValueResult<PagedResult<EmployeeRequestViewModel>>.Success(new([], pageNumber, pageSize, 0));
 
             var totalCount = await _uOW.EmployeeRequestRepositoryAsync.GetCountAsync(x => x.Status == RequestStatus.Pending);
 
@@ -278,9 +278,9 @@ namespace EduNexus.Business.Services
                 };
             }).ToList();
 
-            var pagedResult = new PagesResult<EmployeeRequestViewModel>(deserlizedData, pageNumber, pageSize, totalCount);
+            var pagedResult = new PagedResult<EmployeeRequestViewModel>(deserlizedData, pageNumber, pageSize, totalCount);
 
-            return ValueResult<PagesResult<EmployeeRequestViewModel>>.Success(pagedResult);
+            return ValueResult<PagedResult<EmployeeRequestViewModel>>.Success(pagedResult);
         }
 
         public async Task<ValueResult<EmployeeRequestViewModel>> GetEmployeeRequestByIdAsync(Guid requestId, CancellationToken cancellation = default)
